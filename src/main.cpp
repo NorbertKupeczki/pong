@@ -1,7 +1,6 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include "Game.h"
-#include "Ball.h"
 
 
 int main()
@@ -10,7 +9,7 @@ int main()
             << std::endl;
 
   // create window and set up
-  sf::RenderWindow window(sf::VideoMode(1364, 768), "Pong 2020");
+  sf::RenderWindow window(sf::VideoMode(1364, 768), "Pong 2021");
   window.setFramerateLimit(60);
 
   //initialise an instance of the game class
@@ -45,6 +44,10 @@ int main()
       if (event.type == sf::Event::KeyPressed)
       {
         game.keyPressed(event);
+      }
+      if (event.type == sf::Event::KeyReleased)
+      {
+        game.keyReleased(event);
       }
     }
 
