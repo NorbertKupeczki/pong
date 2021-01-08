@@ -1,12 +1,11 @@
 #include "Ball.h"
-#include "Paddles.h"
 #include <iostream>
 #include <cmath>
 
 Ball::Ball()
 {
   std::cout << "Ball appears\n";
-  speed = 150.0f;
+  ball_speed = 0.0f;
 
   if(!ball_texture.loadFromFile("Data/Images/ballGrey.png"))
   {
@@ -16,8 +15,10 @@ Ball::Ball()
 
   y = ((rand() % 8) / 10.0);
   x = sqrt(1-pow(y,2));
-  normalise(x,y);
+  normalise();
   randomiseDirection(x,y);
+
+  in_play = true;
 }
 
 Ball::~Ball()
@@ -27,10 +28,21 @@ Ball::~Ball()
 
 float Ball::getSpeed()
 {
-  return speed;
+  return ball_speed;
 }
 
-void Ball::normalise(float& x, float& y)
+void Ball::setSpeed(float speed)
+{
+  ball_speed = speed;
+}
+
+void Ball::increaseSpeed()
+{
+  ball_speed += 20.0;
+  std::cout << "New speed: " << ball_speed << "\n";
+}
+
+void Ball::normalise()
 {
   float magnitude = sqrt(pow(x,2) + pow(y,2));
   x = x/magnitude;
@@ -48,7 +60,6 @@ void Ball::randomiseDirection(float& x_dir, float& y_dir)
   {
     y_dir = -1.0 * y_dir;
   }
-
 }
 
 float Ball::getX()
@@ -69,40 +80,65 @@ bool Ball::collisionCheck(sf::RenderWindow& window, sf::Sprite p1, sf::Sprite p2
       (y > 0.0 && ball_sprite.getPosition().y +
        ball_sprite.getLocalBounds().height >= window.getSize().y))
   {
-    wallBounce(y);
+    wallBounce();
     return true;
   }
 
   if (ball_sprite.getPosition().x < p1.getPosition().x + p1.getLocalBounds().width &&
       ball_sprite.getPosition().x > p1.getPosition().x &&
       ball_sprite.getPosition().y + 2* ballRadius >= p1.getPosition().y &&
-      ball_sprite.getPosition().y <= p1.getPosition().y + p1.getLocalBounds().height)
+      ball_sprite.getPosition().y <= p1.getPosition().y + p1.getLocalBounds().height &&
+      x < 0.0)
   {
-    std::cout << "Paddle hit\n";
-    wallBounce(x);
+    adjustAngle(p1);
+    increaseSpeed();
     return true;
   }
 
   if (ball_sprite.getPosition().x + 2* ballRadius > p2.getPosition().x &&
       ball_sprite.getPosition().x + 2* ballRadius < p2.getPosition().x + p2.getLocalBounds().width &&
       ball_sprite.getPosition().y + 2* ballRadius >= p2.getPosition().y &&
-      ball_sprite.getPosition().y <= p2.getPosition().y + p2.getLocalBounds().height)
+      ball_sprite.getPosition().y <= p2.getPosition().y + p2.getLocalBounds().height &&
+      x > 0.0)
   {
-    std::cout << "Paddle hit\n";
-    wallBounce(x);
+    adjustAngle(p2);
+    increaseSpeed();
     return true;
   }
 
   return false;
 }
 
-void Ball::wallBounce(float& dir)
+void Ball::wallBounce()
 {
-  dir = -1 * dir;
+  y = -1.0 * y;
 }
 
-void Ball::score()
+void Ball::adjustAngle(sf::Sprite paddle)
 {
-  // To add point to the scoring player's tally based on which side the
-  // ball left the field
+  float ball_mid = ball_sprite.getPosition().y + ball_sprite.getLocalBounds().height / 2;
+  float paddle_mid = paddle.getPosition().y + paddle.getLocalBounds().height / 2;
+  float dist = paddle_mid - ball_mid;
+  float new_y = dist / (paddle.getLocalBounds().height / 2 + ball_sprite.getLocalBounds().height / 2)
+                * (1 / sqrt(2)) * -1.0;
+  y = new_y;
+  if (x < 0.0)
+  {
+    x = sqrt(1-pow(new_y,2));
+  }
+  else
+  {
+    x = -1.0 * sqrt(1-pow(new_y,2));
+  }
+  normalise();
+}
+
+void Ball::setStartLocation(float loc)
+{
+  y_loc = loc;
+}
+
+float Ball::getStartLocation()
+{
+  return y_loc;
 }

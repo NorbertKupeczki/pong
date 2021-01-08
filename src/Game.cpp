@@ -194,11 +194,61 @@ void Game::initTextures()
   selection_box_sp.setPosition(
     window.getSize().x / 2 - selection_box_sp.getGlobalBounds().width / 2,
     window.getSize().y / 2 - selection_box_sp.getGlobalBounds().height / 2 - 80);
+
+  if(!game_over_blue.loadFromFile("Data/Images/gameover_b_menu.png"))
+  {
+    std::cout << "Game Over menu (BLUE) texture didn't load\n";
+  }
+  if(!game_over_red.loadFromFile("Data/Images/gameover_r_menu.png"))
+  {
+    std::cout << "Game Over menu (RED) texture didn't load\n";
+  }
+  game_over_sp.setTexture(game_over_red);
+  game_over_sp.setPosition(
+    window.getSize().x / 2 - game_over_sp.getGlobalBounds().width / 2,
+    window.getSize().y / 2 - game_over_sp.getGlobalBounds().height / 2);
+
+  if(!main_active.loadFromFile("Data/Images/main_active.png"))
+  {
+    std::cout << "Main menu button (active) texture didn't load\n";
+  }
+  if(!main_inactive.loadFromFile("Data/Images/main_inactive.png"))
+  {
+    std::cout << "Main menu (inactive) texture didn't load\n";
+  }
+  main_button.setTexture(main_active);
+  main_button.setPosition(
+    window.getSize().x / 2 - main_button.getGlobalBounds().width / 2,
+    window.getSize().y / 2 - main_button.getGlobalBounds().height / 2);
+  exit_button.setTexture(quit_game_inactive);
+  exit_button.setPosition(
+    window.getSize().x / 2 - exit_button.getGlobalBounds().width / 2,
+    window.getSize().y / 2 - exit_button.getGlobalBounds().height / 2 + 74);
 }
 
 bool Game::init()
 {
   initTextures();
+
+  if (!font.loadFromFile("Data/Fonts/OpenSans-Bold.ttf"))
+  {
+    std::cout << "Font did not load \n";
+  }
+  p1_score_text.setString("0");
+  p1_score_text.setFont(font);
+  p1_score_text.setCharacterSize(50);
+  p1_score_text.setFillColor(sf::Color(0,0,255,200));
+  p1_score_text.setPosition
+    (window.getSize().x / 2 - p1_score_text.getLocalBounds().width / 2 - 45.0,
+     5.0);
+
+  p2_score_text.setString("0");
+  p2_score_text.setFont(font);
+  p2_score_text.setCharacterSize(50);
+  p2_score_text.setFillColor(sf::Color(255,0,0,200));
+  p2_score_text.setPosition
+    (window.getSize().x / 2 - p2_score_text.getLocalBounds().width / 2 + 40.0,
+     5.0);
 
   number_of_balls = ONE;
   game_length = MEDIUM;
@@ -206,6 +256,7 @@ bool Game::init()
   active_scene = MAIN_MENU;
   selected_game_option = GAME_TYPE_SELECTED;
   selected_menu_option = START_GAME;
+  game_over_option = BACK_TO_MAIN;
 
   p1_paddle.setColor(1);
   p1_paddle.paddle_sprite.setPosition(
@@ -224,26 +275,103 @@ bool Game::init()
 
 void Game::update(float dt)
 {
-  if (active_scene == START_UP)
+  if (active_scene == START_UP && balls == nullptr)
   {
     balls = new Ball[number_of_balls];
     for (int i = 0; i < number_of_balls; i++)
     {
-      balls[i].ball_sprite.setPosition(
-        window.getSize().x / 2 - balls[i].ball_sprite.getGlobalBounds().width / 2,
-        250 + i*100
-        );
+      if (number_of_balls == ONE)
+      {
+        balls[i].setStartLocation
+          (window.getSize().y / 2 -
+           balls[i].ball_sprite.getLocalBounds().height / 2);
+      }
+      else if (number_of_balls == TWO)
+      {
+        balls[i].setStartLocation
+          (window.getSize().y / 3 * (i + 1) -
+           balls[i].ball_sprite.getLocalBounds().height / 2);
+      }
+      else if (number_of_balls == THREE)
+      {
+        balls[i].setStartLocation
+          (window.getSize().y / 4 * (i + 1) -
+           balls[i].ball_sprite.getLocalBounds().height / 2);
+      }
+      balls[i].ball_sprite.setPosition
+        (window.getSize().x / 2 - balls[i].ball_sprite.getGlobalBounds().width / 2,
+        balls[i].getStartLocation());
+      balls[i].setSpeed(250.00 - i * 50.0);
     }
-
-    active_scene = IN_GAME;
+    if (game_type == PVCPU)
+    {
+      p2_paddle.setSpeed(120.0);
+    }
+    balls_in_play = number_of_balls;
   }
+
   else if (active_scene == IN_GAME)
   {
     for (int i = 0; i < number_of_balls; i++)
     {
-      balls[i].ball_sprite.move
-        (balls[i].getX() * balls[i].getSpeed() * dt,
-         balls[i].getY() * balls[i].getSpeed() * dt);
+
+      if (balls[i].ball_sprite.getPosition().x <= 0 && balls[i].in_play)
+      {
+        p2_paddle.addScore();
+        balls_in_play--;
+        balls[i].in_play = false;
+      }
+      else if (balls[i].ball_sprite.getPosition().x +
+               balls[i].ball_sprite.getLocalBounds().width >=
+               window.getSize().x && balls[i].in_play)
+      {
+        p1_paddle.addScore();
+        balls_in_play--;
+        balls[i].in_play = false;
+      }
+
+      if (balls[i].in_play)
+      {
+        balls[i].ball_sprite.move(
+          balls[i].getX() * balls[i].getSpeed() * dt,
+          balls[i].getY() * balls[i].getSpeed() * dt);
+      }
+    }
+
+    if (balls_in_play == 0)
+    {
+      for (int i = 0; i < number_of_balls; i++)
+      {
+        balls[i].ball_sprite.setPosition
+          (window.getSize().x / 2 - balls[i].ball_sprite.getGlobalBounds().width / 2,
+           balls[i].getStartLocation());
+        balls[i].setSpeed(250.00 - i * 50.0);
+        balls[i].in_play = true;
+      }
+      balls_in_play = number_of_balls;
+      p1_paddle.resetPaddle(window);
+      p2_paddle.resetPaddle(window);
+
+      active_scene = START_UP;
+    }
+
+    p1_score_text.setString(std::to_string(p1_paddle.getScore()));
+    p2_score_text.setString(std::to_string(p2_paddle.getScore()));
+
+    if (p1_paddle.getScore() >= game_length || p2_paddle.getScore() >= game_length)
+    {
+      std::cout << "GAME OVER\n";
+      p1_paddle.resetPaddle(window);
+      p2_paddle.resetPaddle(window);
+      if (p1_paddle.getScore() > p2_paddle.getScore())
+      {
+        game_over_sp.setTexture(game_over_blue);
+      }
+      else
+      {
+        game_over_sp.setTexture(game_over_red);
+      }
+      active_scene = GAME_OVER;
     }
 
     for (int i = 0; i < number_of_balls; i++)
@@ -271,24 +399,47 @@ void Game::update(float dt)
       );
     }
 
+    if (game_type == PVCPU)
+    {
+      if((p2_paddle.paddle_sprite.getPosition().y +
+          p2_paddle.paddle_sprite.getLocalBounds().height / 2) >
+          (balls[0].ball_sprite.getPosition().y +
+           balls[0].ball_sprite.getLocalBounds().height /2))
+      {
+        p2_paddle.setDir(-1);
+      }
+      else if (
+        (p2_paddle.paddle_sprite.getPosition().y +
+         p2_paddle.paddle_sprite.getLocalBounds().height / 2) <
+        (balls[0].ball_sprite.getPosition().y +
+         balls[0].ball_sprite.getLocalBounds().height /2))
+      {
+        p2_paddle.setDir(1);
+      }
+      else
+      {
+        p2_paddle.setDir(0);
+      }
+    }
+
     p2_paddle.paddle_sprite.move(
       0.0,
       p2_paddle.getDir() * dt * p2_paddle.getSpeed()
     );
     if (p2_paddle.paddle_sprite.getPosition().y <= 0)
     {
-      p2_paddle.paddle_sprite.setPosition(
-        window.getSize().x - paddle_offset - p2_paddle.paddle_sprite.getLocalBounds().width / 2,
-        0.0
-      );
+      p2_paddle.paddle_sprite.setPosition
+        (window.getSize().x - paddle_offset -
+            p2_paddle.paddle_sprite.getLocalBounds().width / 2,
+        0.0);
     }
     else if (p2_paddle.paddle_sprite.getPosition().y +
              p2_paddle.paddle_sprite.getLocalBounds().height >= window.getSize().y)
     {
-      p2_paddle.paddle_sprite.setPosition(
-        window.getSize().x - paddle_offset - p2_paddle.paddle_sprite.getLocalBounds().width / 2,
-        window.getSize().y - p2_paddle.paddle_sprite.getLocalBounds().height
-      );
+      p2_paddle.paddle_sprite.setPosition
+        (window.getSize().x - paddle_offset -
+            p2_paddle.paddle_sprite.getLocalBounds().width / 2,
+        window.getSize().y - p2_paddle.paddle_sprite.getLocalBounds().height);
     }
   }
 
@@ -299,6 +450,8 @@ void Game::render()
   window.draw(background);
   window.draw(p1_paddle.paddle_sprite);
   window.draw(p2_paddle.paddle_sprite);
+  window.draw(p1_score_text);
+  window.draw(p2_score_text);
 
   if (active_scene == MAIN_MENU)
   {
@@ -325,18 +478,26 @@ void Game::render()
   }
   else if (active_scene == START_UP)
   {
-    std::cout << "Starting the game";
-  }
-  else if (active_scene == IN_GAME)
-  {
     for (int i = 0; i < number_of_balls; i++)
     {
       window.draw(balls[i].ball_sprite);
     }
   }
+  else if (active_scene == IN_GAME)
+  {
+    for (int i = 0; i < number_of_balls; i++)
+    {
+      if (balls[i].in_play)
+      {
+        window.draw(balls[i].ball_sprite);
+      }
+    }
+  }
   else if (active_scene == GAME_OVER)
   {
-    std::cout << "Game Over";
+    window.draw(game_over_sp);
+    window.draw(main_button);
+    window.draw(exit_button);
   }
 }
 
@@ -580,6 +741,13 @@ void Game::keyPressed(sf::Event event)
       }
     }
   }
+  else if (active_scene == START_UP)
+  {
+    if (event.key.code == sf::Keyboard::Enter)
+    {
+      active_scene = IN_GAME;
+    }
+  }
   else if (active_scene == IN_GAME)
   {
     if (event.key.code == sf::Keyboard::Q)
@@ -590,14 +758,59 @@ void Game::keyPressed(sf::Event event)
     {
       p1_paddle.setDir(1.0);
     }
-
-    if (event.key.code == sf::Keyboard::O)
+    if (game_type == PVP)
     {
-      p2_paddle.setDir(-1.0);
+      if (event.key.code == sf::Keyboard::O)
+      {
+        p2_paddle.setDir(-1.0);
+      }
+      else if (event.key.code == sf::Keyboard::L)
+      {
+        p2_paddle.setDir(1.0);
+      }
     }
-    else if (event.key.code == sf::Keyboard::L)
+  }
+  else if (active_scene == GAME_OVER)
+  {
+    if ((event.key.code == sf::Keyboard::Up) ||
+        (event.key.code == sf::Keyboard::Down))
     {
-      p2_paddle.setDir(1.0);
+      if (game_over_option == BACK_TO_MAIN)
+      {
+        game_over_option = EXIT_GAME;
+        main_button.setTexture(main_inactive);
+        exit_button.setTexture(quit_game_active);
+      }
+      else if (game_over_option == EXIT_GAME)
+      {
+        game_over_option = BACK_TO_MAIN;
+        exit_button.setTexture(quit_game_inactive);
+        main_button.setTexture(main_active);
+      }
+    }
+    if (event.key.code == sf::Keyboard::Enter)
+    {
+      if (game_over_option == BACK_TO_MAIN)
+      {
+        active_scene = MAIN_MENU;
+
+        p1_paddle.resetPaddle(window);
+        p1_paddle.resetScore();
+        p1_paddle.setSpeed(200.0);
+        p1_paddle.setDir(0.0);
+
+        p2_paddle.resetPaddle(window);
+        p2_paddle.resetScore();
+        p2_paddle.setSpeed(200.0);
+        p2_paddle.setDir(0.0);
+
+        delete[] balls;
+        balls = nullptr;
+      }
+      else if (game_over_option == EXIT_GAME)
+      {
+        window.close();
+      }
     }
   }
 }
@@ -611,10 +824,14 @@ void Game::keyReleased(sf::Event event)
     {
       p1_paddle.setDir(0.0);
     }
-    if ((event.key.code == sf::Keyboard::O) ||
-        (event.key.code == sf::Keyboard::L))
+    if (game_type == PVP)
     {
-      p2_paddle.setDir(0.0);
+      if (
+        (event.key.code == sf::Keyboard::O) ||
+        (event.key.code == sf::Keyboard::L))
+      {
+        p2_paddle.setDir(0.0);
+      }
     }
   }
 }

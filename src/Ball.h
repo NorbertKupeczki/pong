@@ -12,22 +12,27 @@ class Ball
   sf::Sprite ball_sprite;
   sf::Texture ball_texture;
 
+  bool in_play;
   float getSpeed();
-
+  void setSpeed(float speed);
+  void increaseSpeed();
   float getX();
   float getY();
-  void normalise(float& x,float& y);
+  void normalise();
   void randomiseDirection(float& x, float& y);
-
   bool collisionCheck(sf::RenderWindow& window, sf::Sprite p1, sf::Sprite p2);
-  void wallBounce(float& y);
-  void score();
+  void wallBounce();
+  void adjustAngle(sf::Sprite paddle);
+  void setStartLocation(float loc);
+  float getStartLocation();
 
  private:
 
-  float speed;
+  float ball_speed;
   float x;
   float y;
+
+  float y_loc;
 
 };
 

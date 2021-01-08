@@ -13,13 +13,14 @@ class Paddle
 
   int getScore();
   void addScore();
+  void resetScore();
 
   float getDir();
   void setDir(float dir);
-
   float getSpeed();
-
+  void setSpeed(float speed);
   void setColor(int player);
+  void resetPaddle(sf::RenderWindow& window);
 
  private:
   sf::Texture paddle_texture_red;

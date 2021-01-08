@@ -15,6 +15,7 @@ Paddle::Paddle()
   }
   y_dir = 0.0f;
   paddle_speed = 200.0f;
+  score = 0;
 }
 
 Paddle::~Paddle()
@@ -30,6 +31,11 @@ int Paddle::getScore()
 void Paddle::addScore()
 {
   score++;
+}
+
+void Paddle::resetScore()
+{
+  score = 0;
 }
 
 void Paddle::setColor(int player)
@@ -68,4 +74,16 @@ void Paddle::setDir(float dir)
 float Paddle::getSpeed()
 {
   return paddle_speed;
+}
+
+void Paddle::setSpeed(float speed)
+{
+  paddle_speed = speed;
+}
+
+void Paddle::resetPaddle(sf::RenderWindow& window)
+{
+  paddle_sprite.setPosition
+    (paddle_sprite.getPosition().x,
+     window.getSize().y / 2 - paddle_sprite.getLocalBounds().height / 2);
 }

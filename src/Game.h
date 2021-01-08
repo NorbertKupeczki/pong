@@ -21,6 +21,10 @@ class Game
  private:
   sf::RenderWindow& window;
 
+  sf::Font font;
+  sf::Text p1_score_text;
+  sf::Text p2_score_text;
+
   // Sprites and Textures
   sf::Sprite background;
   sf::Texture bg_texture;
@@ -67,7 +71,12 @@ class Game
   sf::Sprite selection_box_sp;
   // Game over menu sprites and textures
   sf::Sprite game_over_sp;
-  sf::Texture game_over_texture;
+  sf::Texture game_over_blue;
+  sf::Texture game_over_red;
+  sf::Sprite main_button;
+  sf::Texture main_active;
+  sf::Texture main_inactive;
+  sf::Sprite exit_button;
 
   enum GameType
   {
@@ -112,6 +121,12 @@ class Game
     BALLS_SELECTED = 2
   };
 
+  enum GameOverOptions
+  {
+    BACK_TO_MAIN = 0,
+    EXIT_GAME = 1
+  };
+
   // Game variables
   GameType game_type;
   GameLength game_length;
@@ -119,12 +134,15 @@ class Game
   Scene active_scene;
   GameOptionsSelector selected_game_option;
   MainMenuSelected selected_menu_option;
+  GameOverOptions game_over_option;
 
   Ball* balls = nullptr;
   Paddle p1_paddle;
   Paddle p2_paddle;
 
   float paddle_offset = 40.0;
+
+  int balls_in_play = 0;
 
 };
 
