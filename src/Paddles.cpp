@@ -86,4 +86,5 @@ void Paddle::resetPaddle(sf::RenderWindow& window)
   paddle_sprite.setPosition
     (paddle_sprite.getPosition().x,
      window.getSize().y / 2 - paddle_sprite.getLocalBounds().height / 2);
+  setDir(0.0);
 }

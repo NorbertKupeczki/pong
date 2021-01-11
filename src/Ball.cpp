@@ -13,12 +13,25 @@ Ball::Ball()
   }
   ball_sprite.setTexture(ball_texture);
 
-  y = ((rand() % 8) / 10.0);
-  x = sqrt(1-pow(y,2));
+  // Initialise, normalise and randomise starting vectors
+  ball_vector.y = ((rand() % 8) / 10.0);
+  ball_vector.x = sqrt(1-pow(ball_vector.y,2));
   normalise();
-  randomiseDirection(x,y);
+  randomiseDirection();
 
   in_play = true;
+
+  if (!wall_bounce_bf.loadFromFile("Data/Sounds/wall_bounce.wav"))
+  {
+    std::cout << "Wall bounce sound didn't load to buffer!\n";
+  }
+  wall_bounce.setBuffer(wall_bounce_bf);
+
+  if (!paddle_bounce_bf.loadFromFile("Data/Sounds/paddle_bounce.ogg"))
+  {
+    std::cout << "Paddle bounce sound didn't load to buffer!\n";
+  }
+  paddle_bounce.setBuffer(paddle_bounce_bf);
 }
 
 Ball::~Ball()
@@ -44,65 +57,60 @@ void Ball::increaseSpeed()
 
 void Ball::normalise()
 {
-  float magnitude = sqrt(pow(x,2) + pow(y,2));
-  x = x/magnitude;
-  y = y/magnitude;
-  std::cout << "X=" << x << " Y=" << y << "\n";
+  float magnitude = sqrt(pow(ball_vector.x,2) + pow(ball_vector.y,2));
+  ball_vector.x = ball_vector.x/magnitude;
+  ball_vector.y = ball_vector.y/magnitude;
+  std::cout << "X=" << ball_vector.x << " Y=" << ball_vector.y << "\n";
 }
 
-void Ball::randomiseDirection(float& x_dir, float& y_dir)
+void Ball::randomiseDirection()
 {
   if (rand() % 2 == 1)
   {
-    x_dir = -1.0 * x_dir;
+    ball_vector.x = -1.0 * ball_vector.x;
   }
   if (rand() % 2 == 1)
   {
-    y_dir = -1.0 * y_dir;
+    ball_vector.y = -1.0 * ball_vector.y;
   }
 }
 
 float Ball::getX()
 {
-  return x;
+  return ball_vector.x;
 }
 
 float Ball::getY()
 {
-  return y;
+  return ball_vector.y;
 }
 
 bool Ball::collisionCheck(sf::RenderWindow& window, sf::Sprite p1, sf::Sprite p2)
 {
-  float ballRadius = ball_sprite.getLocalBounds().width / 2;
-
-  if ((y < 0.0 && ball_sprite.getPosition().y <= 0) ||
-      (y > 0.0 && ball_sprite.getPosition().y +
+  if ((ball_vector.y < 0.0 && ball_sprite.getPosition().y <= 0) ||
+      (ball_vector.y > 0.0 && ball_sprite.getPosition().y +
        ball_sprite.getLocalBounds().height >= window.getSize().y))
   {
     wallBounce();
+    wall_bounce.play();
     return true;
   }
 
-  if (ball_sprite.getPosition().x < p1.getPosition().x + p1.getLocalBounds().width &&
-      ball_sprite.getPosition().x > p1.getPosition().x &&
-      ball_sprite.getPosition().y + 2* ballRadius >= p1.getPosition().y &&
-      ball_sprite.getPosition().y <= p1.getPosition().y + p1.getLocalBounds().height &&
-      x < 0.0)
+  if (ball_sprite.getGlobalBounds().intersects(p1.getGlobalBounds()) &&
+      ball_vector.x < 0.0)
   {
     adjustAngle(p1);
     increaseSpeed();
+    paddle_bounce.play();
     return true;
   }
 
-  if (ball_sprite.getPosition().x + 2* ballRadius > p2.getPosition().x &&
-      ball_sprite.getPosition().x + 2* ballRadius < p2.getPosition().x + p2.getLocalBounds().width &&
-      ball_sprite.getPosition().y + 2* ballRadius >= p2.getPosition().y &&
-      ball_sprite.getPosition().y <= p2.getPosition().y + p2.getLocalBounds().height &&
-      x > 0.0)
+  if (ball_sprite.getGlobalBounds().intersects(p2.getGlobalBounds()) &&
+      ball_vector.x > 0.0)
   {
     adjustAngle(p2);
     increaseSpeed();
+    paddle_bounce.play();
     return true;
   }
 
@@ -111,7 +119,7 @@ bool Ball::collisionCheck(sf::RenderWindow& window, sf::Sprite p1, sf::Sprite p2
 
 void Ball::wallBounce()
 {
-  y = -1.0 * y;
+  ball_vector.y = -1.0 * ball_vector.y;
 }
 
 void Ball::adjustAngle(sf::Sprite paddle)
@@ -121,14 +129,14 @@ void Ball::adjustAngle(sf::Sprite paddle)
   float dist = paddle_mid - ball_mid;
   float new_y = dist / (paddle.getLocalBounds().height / 2 + ball_sprite.getLocalBounds().height / 2)
                 * (1 / sqrt(2)) * -1.0;
-  y = new_y;
-  if (x < 0.0)
+  ball_vector.y = new_y;
+  if (ball_vector.x < 0.0)
   {
-    x = sqrt(1-pow(new_y,2));
+    ball_vector.x = sqrt(1-pow(new_y,2));
   }
   else
   {
-    x = -1.0 * sqrt(1-pow(new_y,2));
+    ball_vector.x = -1.0 * sqrt(1-pow(new_y,2));
   }
   normalise();
 }

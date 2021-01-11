@@ -6,6 +6,14 @@ Game::Game(sf::RenderWindow& window)
   : window(window)
 {
   srand(time(NULL));
+
+  number_of_balls = ONE;
+  game_length = MEDIUM;
+  game_type = PVP;
+  active_scene = MAIN_MENU;
+  selected_game_option = GAME_TYPE_SELECTED;
+  selected_menu_option = START_GAME;
+  game_over_option = BACK_TO_MAIN;
 }
 
 Game::~Game()
@@ -33,6 +41,25 @@ void Game::initTextures()
   main_menu_sp.setPosition(
     window.getSize().x / 2 - main_menu_sp.getGlobalBounds().width / 2,
     window.getSize().y / 2 - main_menu_sp.getGlobalBounds().height / 2);
+
+  if(!press_enter_texture.loadFromFile("Data/Images/enter.png"))
+  {
+    std::cout << "Press ENTER... texture didn't load\n";
+  }
+  press_enter.setTexture(press_enter_texture);
+  press_enter.setPosition(
+    window.getSize().x / 2 - press_enter.getGlobalBounds().width / 2,
+    window.getSize().y - press_enter.getGlobalBounds().height - 20);
+
+  if(!keys_texture.loadFromFile("Data/Images/keys.png"))
+  {
+    std::cout << "Press ENTER... texture didn't load\n";
+  }
+  keys.setTexture(keys_texture);
+  keys.setPosition(
+    window.getSize().x / 2 - keys.getGlobalBounds().width / 2,
+    window.getSize().y / 2 - keys.getGlobalBounds().height / 2 +
+    main_menu_sp.getLocalBounds().height / 2 + keys.getLocalBounds().height / 2 + 14);
 
   if(!start_game_active.loadFromFile("Data/Images/start_active.png"))
   {
@@ -229,15 +256,30 @@ void Game::initTextures()
 bool Game::init()
 {
   initTextures();
+  // Initialising sounds
+  if (!victory_buffer.loadFromFile("Data/Sounds/victory.wav"))
+  {
+    std::cout << "Victory sound didn't load to buffer!\n";
+  }
+  victory_sound.setBuffer(victory_buffer);
 
+  if (!menu_buffer.loadFromFile("Data/Sounds/menu.wav"))
+  {
+    std::cout << "Menu sound didn't load to buffer!\n";
+  }
+  menu_sound.setBuffer(menu_buffer);
+
+  // Initialising font
   if (!font.loadFromFile("Data/Fonts/OpenSans-Bold.ttf"))
   {
     std::cout << "Font did not load \n";
   }
+
+  // Initialising score trackers
   p1_score_text.setString("0");
   p1_score_text.setFont(font);
   p1_score_text.setCharacterSize(50);
-  p1_score_text.setFillColor(sf::Color(0,0,255,200));
+  p1_score_text.setFillColor(sf::Color(0,100,255,200));
   p1_score_text.setPosition
     (window.getSize().x / 2 - p1_score_text.getLocalBounds().width / 2 - 45.0,
      5.0);
@@ -250,20 +292,14 @@ bool Game::init()
     (window.getSize().x / 2 - p2_score_text.getLocalBounds().width / 2 + 40.0,
      5.0);
 
-  number_of_balls = ONE;
-  game_length = MEDIUM;
-  game_type = PVP;
-  active_scene = MAIN_MENU;
-  selected_game_option = GAME_TYPE_SELECTED;
-  selected_menu_option = START_GAME;
-  game_over_option = BACK_TO_MAIN;
-
+  // Initialising Player 1
   p1_paddle.setColor(1);
   p1_paddle.paddle_sprite.setPosition(
     paddle_offset - p1_paddle.paddle_sprite.getLocalBounds().width / 2,
     window.getSize().y / 2 - p1_paddle.paddle_sprite.getLocalBounds().height /2
     );
 
+  // Initialising Player 2
   p2_paddle.setColor(2);
   p2_paddle.paddle_sprite.setPosition(
     window.getSize().x - paddle_offset - p2_paddle.paddle_sprite.getLocalBounds().width / 2,
@@ -275,46 +311,42 @@ bool Game::init()
 
 void Game::update(float dt)
 {
+  p1_score_text.setString(std::to_string(p1_paddle.getScore()));
+  p2_score_text.setString(std::to_string(p2_paddle.getScore()));
+
+  // Setting up the game based on the options
   if (active_scene == START_UP && balls == nullptr)
   {
     balls = new Ball[number_of_balls];
     for (int i = 0; i < number_of_balls; i++)
     {
-      if (number_of_balls == ONE)
-      {
-        balls[i].setStartLocation
-          (window.getSize().y / 2 -
-           balls[i].ball_sprite.getLocalBounds().height / 2);
-      }
-      else if (number_of_balls == TWO)
-      {
-        balls[i].setStartLocation
-          (window.getSize().y / 3 * (i + 1) -
-           balls[i].ball_sprite.getLocalBounds().height / 2);
-      }
-      else if (number_of_balls == THREE)
-      {
-        balls[i].setStartLocation
-          (window.getSize().y / 4 * (i + 1) -
-           balls[i].ball_sprite.getLocalBounds().height / 2);
-      }
+      // Distributing the balls evenly across the centre line
+      balls[i].setStartLocation
+        (window.getSize().y / (number_of_balls + 1) * (i + 1) -
+         balls[i].ball_sprite.getLocalBounds().height / 2);
+
       balls[i].ball_sprite.setPosition
         (window.getSize().x / 2 - balls[i].ball_sprite.getGlobalBounds().width / 2,
         balls[i].getStartLocation());
-      balls[i].setSpeed(250.00 - i * 50.0);
+
+      // Setting up variable speeds for the balls to start with
+      balls[i].setSpeed(350.00 - i * 50.0);
     }
+
+    // To give the player a better chance to win, reducing the AI player's
+    // paddle's speed.
     if (game_type == PVCPU)
     {
-      p2_paddle.setSpeed(120.0);
+      p2_paddle.setSpeed(140.0);
     }
     balls_in_play = number_of_balls;
   }
 
   else if (active_scene == IN_GAME)
   {
+    // Checking whether the balls score point
     for (int i = 0; i < number_of_balls; i++)
     {
-
       if (balls[i].ball_sprite.getPosition().x <= 0 && balls[i].in_play)
       {
         p2_paddle.addScore();
@@ -330,6 +362,7 @@ void Game::update(float dt)
         balls[i].in_play = false;
       }
 
+      // Move the balls still in play based on their vectors and speed
       if (balls[i].in_play)
       {
         balls[i].ball_sprite.move(
@@ -338,6 +371,8 @@ void Game::update(float dt)
       }
     }
 
+    // If there are no more balls in play, the paddles and the balls are all set
+    // back to their initial positions.
     if (balls_in_play == 0)
     {
       for (int i = 0; i < number_of_balls; i++)
@@ -345,7 +380,7 @@ void Game::update(float dt)
         balls[i].ball_sprite.setPosition
           (window.getSize().x / 2 - balls[i].ball_sprite.getGlobalBounds().width / 2,
            balls[i].getStartLocation());
-        balls[i].setSpeed(250.00 - i * 50.0);
+        balls[i].setSpeed(350.00 - i * 50.0);
         balls[i].in_play = true;
       }
       balls_in_play = number_of_balls;
@@ -355,9 +390,7 @@ void Game::update(float dt)
       active_scene = START_UP;
     }
 
-    p1_score_text.setString(std::to_string(p1_paddle.getScore()));
-    p2_score_text.setString(std::to_string(p2_paddle.getScore()));
-
+    // If either player reaches the scores determined by the game length option
     if (p1_paddle.getScore() >= game_length || p2_paddle.getScore() >= game_length)
     {
       std::cout << "GAME OVER\n";
@@ -371,14 +404,17 @@ void Game::update(float dt)
       {
         game_over_sp.setTexture(game_over_red);
       }
+      victory_sound.play();
       active_scene = GAME_OVER;
     }
 
+    // Calling the collision check method of the balls
     for (int i = 0; i < number_of_balls; i++)
     {
       balls[i].collisionCheck(window,p1_paddle.paddle_sprite,p2_paddle.paddle_sprite);
     }
 
+    // Moving the paddle of Player 1
     p1_paddle.paddle_sprite.move(
       0.0,
       p1_paddle.getDir() * dt * p1_paddle.getSpeed()
@@ -399,6 +435,7 @@ void Game::update(float dt)
       );
     }
 
+    // Moving the paddle of Player 2 in case of the second players is AI
     if (game_type == PVCPU)
     {
       if((p2_paddle.paddle_sprite.getPosition().y +
@@ -422,6 +459,7 @@ void Game::update(float dt)
       }
     }
 
+    // Moving the paddle of Player 2 in case of a two player game
     p2_paddle.paddle_sprite.move(
       0.0,
       p2_paddle.getDir() * dt * p2_paddle.getSpeed()
@@ -442,7 +480,6 @@ void Game::update(float dt)
         window.getSize().y - p2_paddle.paddle_sprite.getLocalBounds().height);
     }
   }
-
 }
 
 void Game::render()
@@ -456,6 +493,7 @@ void Game::render()
   if (active_scene == MAIN_MENU)
   {
     window.draw(main_menu_sp);
+    window.draw(keys);
     window.draw(start_game);
     window.draw(options);
     window.draw(quit_game);
@@ -463,6 +501,7 @@ void Game::render()
   else if (active_scene == OPTIONS)
   {
     window.draw(options_menu_sp);
+    window.draw(keys);
     window.draw(one_button);
     if (game_type == PVP)
     {
@@ -482,6 +521,7 @@ void Game::render()
     {
       window.draw(balls[i].ball_sprite);
     }
+    window.draw(press_enter);
   }
   else if (active_scene == IN_GAME)
   {
@@ -512,6 +552,7 @@ void Game::keyPressed(sf::Event event)
   {
     if (event.key.code == sf::Keyboard::Up)
     {
+      menu_sound.play();
       if (selected_menu_option == START_GAME)
       {
         selected_menu_option = QUIT_GAME;
@@ -533,6 +574,7 @@ void Game::keyPressed(sf::Event event)
     }
     else if (event.key.code == sf::Keyboard::Down)
     {
+      menu_sound.play();
       if (selected_menu_option == START_GAME)
       {
         selected_menu_option = OPTIONS_MENU;
@@ -554,6 +596,7 @@ void Game::keyPressed(sf::Event event)
     }
     else if (event.key.code == sf::Keyboard::Enter)
     {
+      menu_sound.play();
       if (selected_menu_option == START_GAME)
       {
         active_scene = START_UP;
@@ -572,10 +615,12 @@ void Game::keyPressed(sf::Event event)
   {
     if (event.key.code == sf::Keyboard::Enter)
     {
+      menu_sound.play();
       active_scene = MAIN_MENU;
     }
     else if (event.key.code == sf::Keyboard::Up)
     {
+      menu_sound.play();
       if (selected_game_option == GAME_TYPE_SELECTED)
       {
         selected_game_option = BALLS_SELECTED;
@@ -594,6 +639,7 @@ void Game::keyPressed(sf::Event event)
     }
     else if (event.key.code == sf::Keyboard::Down)
     {
+      menu_sound.play();
       if (selected_game_option == GAME_TYPE_SELECTED)
       {
         selected_game_option = GAME_LENGTH_SELECTED;
@@ -612,6 +658,7 @@ void Game::keyPressed(sf::Event event)
     }
     else if (event.key.code == sf::Keyboard::Left)
     {
+      menu_sound.play();
       if (selected_game_option == GAME_TYPE_SELECTED)
       {
         if (game_type == PVP)
@@ -677,6 +724,7 @@ void Game::keyPressed(sf::Event event)
     }
     else if (event.key.code == sf::Keyboard::Right)
     {
+      menu_sound.play();
       if (selected_game_option == GAME_TYPE_SELECTED)
       {
         if (game_type == PVP)
@@ -745,6 +793,7 @@ void Game::keyPressed(sf::Event event)
   {
     if (event.key.code == sf::Keyboard::Enter)
     {
+      menu_sound.play();
       active_scene = IN_GAME;
     }
   }
@@ -775,6 +824,7 @@ void Game::keyPressed(sf::Event event)
     if ((event.key.code == sf::Keyboard::Up) ||
         (event.key.code == sf::Keyboard::Down))
     {
+      menu_sound.play();
       if (game_over_option == BACK_TO_MAIN)
       {
         game_over_option = EXIT_GAME;
@@ -792,6 +842,7 @@ void Game::keyPressed(sf::Event event)
     {
       if (game_over_option == BACK_TO_MAIN)
       {
+        menu_sound.play();
         active_scene = MAIN_MENU;
 
         p1_paddle.resetPaddle(window);

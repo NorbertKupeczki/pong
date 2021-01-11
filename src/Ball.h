@@ -2,6 +2,7 @@
 #define PONG_BALL_H
 
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 
 class Ball
 {
@@ -10,7 +11,6 @@ class Ball
   ~Ball();
 
   sf::Sprite ball_sprite;
-  sf::Texture ball_texture;
 
   bool in_play;
   float getSpeed();
@@ -19,7 +19,7 @@ class Ball
   float getX();
   float getY();
   void normalise();
-  void randomiseDirection(float& x, float& y);
+  void randomiseDirection();
   bool collisionCheck(sf::RenderWindow& window, sf::Sprite p1, sf::Sprite p2);
   void wallBounce();
   void adjustAngle(sf::Sprite paddle);
@@ -27,11 +27,20 @@ class Ball
   float getStartLocation();
 
  private:
+  sf::SoundBuffer wall_bounce_bf;
+  sf::SoundBuffer paddle_bounce_bf;
+  sf::Sound wall_bounce;
+  sf::Sound paddle_bounce;
 
+  sf::Texture ball_texture;
+  struct Vector2
+  {
+    float x;
+    float y;
+  };
+
+  Vector2 ball_vector;
   float ball_speed;
-  float x;
-  float y;
-
   float y_loc;
 
 };

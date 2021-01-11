@@ -3,6 +3,7 @@
 #define PONG_GAME_H
 
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include "Ball.h"
 #include "Paddles.h"
 
@@ -20,6 +21,11 @@ class Game
 
  private:
   sf::RenderWindow& window;
+
+  sf::SoundBuffer victory_buffer;
+  sf::SoundBuffer menu_buffer;
+  sf::Sound victory_sound;
+  sf::Sound menu_sound;
 
   sf::Font font;
   sf::Text p1_score_text;
@@ -40,6 +46,10 @@ class Game
   sf::Sprite quit_game;
   sf::Texture quit_game_active;
   sf::Texture quit_game_inactive;
+  sf::Sprite press_enter;
+  sf::Texture press_enter_texture;
+  sf::Sprite keys;
+  sf::Texture keys_texture;
   // Options menu sprites and textures
   sf::Sprite options_menu_sp;
   sf::Texture options_menu_texture;
