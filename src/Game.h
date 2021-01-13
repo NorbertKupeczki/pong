@@ -12,7 +12,7 @@ class Game
  public:
   Game(sf::RenderWindow& window);
   ~Game();
-  void initTextures();
+
   bool init();
   void update(float dt);
   void render();
@@ -154,6 +154,7 @@ class Game
 
   int balls_in_play = 0;
 
+  void initTextures();
 };
 
 #endif // PONG_GAME_H

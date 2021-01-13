@@ -351,6 +351,7 @@ void Game::update(float dt)
       {
         p2_paddle.addScore();
         balls_in_play--;
+        balls[i].reverseX();
         balls[i].in_play = false;
       }
       else if (balls[i].ball_sprite.getPosition().x +
@@ -359,6 +360,7 @@ void Game::update(float dt)
       {
         p1_paddle.addScore();
         balls_in_play--;
+        balls[i].reverseX();
         balls[i].in_play = false;
       }
 

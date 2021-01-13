@@ -18,6 +18,7 @@ class Ball
   void increaseSpeed();
   float getX();
   float getY();
+  void reverseX();
   void normalise();
   void randomiseDirection();
   bool collisionCheck(sf::RenderWindow& window, sf::Sprite p1, sf::Sprite p2);

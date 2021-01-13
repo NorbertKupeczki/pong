@@ -85,6 +85,11 @@ float Ball::getY()
   return ball_vector.y;
 }
 
+void Ball::reverseX()
+{
+  ball_vector.x = -1.0 * ball_vector.x;
+}
+
 bool Ball::collisionCheck(sf::RenderWindow& window, sf::Sprite p1, sf::Sprite p2)
 {
   if ((ball_vector.y < 0.0 && ball_sprite.getPosition().y <= 0) ||
